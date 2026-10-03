@@ -3,7 +3,7 @@
     <header class="page-head">
       <div>
         <h2>站点巡检管理</h2>
-        <p class="page-desc">维护巡检记录，围绕巡检编号、巡检站点、巡检路线、巡检人做登记、筛选与状态流转。</p>
+        <p class="page-desc">维护巡检记录，围绕巡检编号、巡检站点、巡检路线、巡检人做登记、筛选与状态流转；补水定压核对出的参数异常会进入下方待核查清单。</p>
       </div>
       <div class="page-actions">
         <button class="btn primary" type="button" @click="openCreate">登记巡检记录</button>
@@ -16,7 +16,40 @@
         <span class="stat-label">{{ item.label }}</span>
         <strong class="stat-value">{{ item.value }}</strong>
       </article>
+      <article class="stat-card stat-highlight">
+        <span class="stat-label">补水核对待核查</span>
+        <strong class="stat-value">{{ checklist.length }}</strong>
+      </article>
     </div>
+
+    <section class="checklist">
+      <h3>补水参数异常待核查清单（由补水定压核对结果驱动）</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>核查单号</th>
+            <th>换热站</th>
+            <th>核查事项</th>
+            <th>来源记录编号</th>
+            <th>下发日期</th>
+            <th>状态</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in checklist" :key="String(item.id)">
+            <td>{{ item['巡检编号'] }}</td>
+            <td>{{ item['巡检站点'] }}</td>
+            <td>{{ item['巡检路线'] }}</td>
+            <td>{{ item['来源记录'] }}</td>
+            <td>{{ item['巡检日期'] }}</td>
+            <td>{{ item.status }}</td>
+          </tr>
+          <tr v-if="!checklist.length">
+            <td colspan="6" class="empty-state">暂无补水参数异常待核查项</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
 
     <p class="status-legend">
       <span v-for="item in statusSummary" :key="item.status" class="legend-item">
@@ -77,6 +110,7 @@ import {
   downloadEntries,
   listEntries,
   moduleMeta,
+  patrolChecklist,
   runAction as applyAction,
 } from '@/api/local-service'
 import type { EntryRow } from '@/data/types'
@@ -85,9 +119,10 @@ const meta = moduleMeta('stationpatrol')
 const columns = ["巡检编号", "巡检站点", "巡检路线", "巡检人", "巡检日期", "发现问题数", "整改期限", "巡检状态"]
 const actions = ["提交巡检", "确认整改", "上报问题"]
 const statuses = ["待巡检", "巡检中", "已整改", "已上报"]
-const stats = [{"label": "待巡检站点", "value": 0}, {"label": "待整改问题", "value": 0}, {"label": "本月巡检次数", "value": 0}]
+const stats = [{ label: "待巡检站点", value: 0 }, { label: "待整改问题", value: 0 }, { label: "本月巡检次数", value: 0 }]
 
 const rows = ref<EntryRow[]>([])
+const checklist = ref<EntryRow[]>([])
 const total = ref(0)
 const errorMessage = ref('')
 const filters = ref<Record<string, string>>({})
@@ -128,6 +163,7 @@ function reload() {
     const payload = listEntries(meta.key, filters.value)
     rows.value = payload.items
     total.value = payload.total
+    checklist.value = patrolChecklist().items
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '站点巡检列表读取失败'
   }
@@ -135,3 +171,19 @@ function reload() {
 
 onMounted(reload)
 </script>
+
+<style scoped>
+.checklist {
+  margin: 12px 0 16px;
+}
+
+.checklist h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.stat-highlight {
+  border-color: #f0c36d;
+  background: #fffaf0;
+}
+</style>

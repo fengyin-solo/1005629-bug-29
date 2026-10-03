@@ -5,7 +5,7 @@ export type EntryRow = {
   status: string
   pending: boolean
   abnormal: boolean
-  [field: string]: string | number | boolean
+  [field: string]: string | number | boolean | null | object
 }
 
 export type ModuleMeta = {
